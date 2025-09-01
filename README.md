@@ -16,7 +16,6 @@
 ```
 ANDROID-WEBAPP/
 ├── index.php                      # Основной файл магазина приложений
-├── apps/                          # Папка для APK файлов
 ├── holo-base-elements.css         # Базовые стили Holo (размеры)
 ├── holo-ics-dark-elements.css     # Тема ICS Dark (цвета)
 ├── holo-base-widgets.css          # Базовые виджеты Holo
@@ -100,3 +99,4 @@ php -S localhost:8000
 
 - [ZMYaro](https://github.com/ZMYaro) за создание библиотеки holo-web
 - Google за дизайн-систему Android Holo
+
