@@ -65,7 +65,6 @@ function formatFileSize($bytes) {
     </header>
 
     <div>
-          <a href="../"><button>Главная страница</button></a>
           <a href="dmca.html"><button>DMCA</button></a>
     </div>
     <!-- Основной контент -->
