@@ -2,24 +2,65 @@
 // Магазин приложений с темой Holo Ice Cream Sandwich Dark
 // Сканирование APK файлов из папки apps
 
-$apps_dir = 'apps/';
+$base_dir = 'apps/';
 $apps = [];
+$folders = [];
+
+// Пользовательские названия папок берём из JSON (ключ — относительный путь)
+$folder_names_file = __DIR__ . '/folder_names.json';
+$folder_names = [];
+$folder_names_raw = @file_get_contents($folder_names_file);
+if ($folder_names_raw !== false) {
+    $decoded = json_decode($folder_names_raw, true);
+    if (is_array($decoded)) {
+        $folder_names = $decoded;
+    }
+}
+
+// Текущая относительная директория внутри apps (безопасно очищаем ввод)
+$rel_dir = isset($_GET['dir']) ? trim(str_replace(['..', "\\"], ['', '/'], $_GET['dir']), "/") : '';
+
+// Вычисляем абсолютные пути и проверяем, что не выходим за пределы apps
+$root_path = realpath($base_dir) ?: $base_dir; // на случай если каталога ещё нет
+$current_dir_path = $rel_dir !== '' ? $base_dir . $rel_dir . '/' : $base_dir;
+$current_real = realpath($current_dir_path);
+
+if ($current_real !== false && strpos($current_real, realpath($base_dir)) === 0) {
+    $apps_dir = rtrim($current_dir_path, '/') . '/';
+} else {
+    $rel_dir = '';
+    $apps_dir = $base_dir;
+}
 
 // Сканируем папку apps для поиска APK файлов
 if (is_dir($apps_dir)) {
     $files = scandir($apps_dir);
     foreach ($files as $file) {
+        if ($file === '.' || $file === '..') {
+            continue;
+        }
+        $full = $apps_dir . $file;
+        if (is_dir($full)) {
+            $rel_path = ltrim(($rel_dir !== '' ? $rel_dir . '/' : '') . $file, '/');
+            $folders[] = [
+                'name' => $file,
+                'rel' => $rel_path,
+                'display' => $folder_names[$rel_path] ?? $file
+            ];
+            continue;
+        }
         if (pathinfo($file, PATHINFO_EXTENSION) === 'apk') {
-            $file_path = $apps_dir . $file;
-            $file_size = filesize($file_path);
-            $file_date = date("d.m.Y H:i", filemtime($file_path));
-            
+            $rel_file = ($rel_dir !== '' ? $rel_dir . '/' : '') . $file;
+            $web_path = $base_dir . $rel_file;
+            $file_size = @filesize($full);
+            $file_date = @filemtime($full);
             $apps[] = [
                 'name' => pathinfo($file, PATHINFO_FILENAME),
                 'filename' => $file,
-                'size' => formatFileSize($file_size),
-                'date' => $file_date,
-                'path' => $file_path
+                'size' => $file_size !== false ? formatFileSize($file_size) : '—',
+                'date' => $file_date !== false ? date("d.m.Y H:i", $file_date) : '—',
+                'path' => $web_path,
+                'url' => safeUrlPath($web_path)
             ];
         }
     }
@@ -36,6 +77,11 @@ function formatFileSize($bytes) {
         return $bytes . ' bytes';
     }
 }
+
+// Кодирует путь для ссылки, сохраняя слеши
+function safeUrlPath($path) {
+    return str_replace('%2F', '/', rawurlencode($path));
+}
 ?>
 
 <!DOCTYPE html>
@@ -44,12 +90,19 @@ function formatFileSize($bytes) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
     <title>RetroMarket</title>
+    <style>
+        .logo-img {
+            height: 28px;
+            width: auto;
+            vertical-align: middle;
+        }
+    </style>
     
     <!-- Holo Web CSS библиотека - Ice Cream Sandwich Dark -->
-    <link rel="stylesheet" type="text/css" href="holo-base-elements.css" />
-    <link rel="stylesheet" type="text/css" href="holo-ics-dark-elements.css" />
-    <link rel="stylesheet" type="text/css" href="holo-base-widgets.css" />
-    <link rel="stylesheet" type="text/css" href="holo-ics-dark-widgets.css" />
+    <link rel="stylesheet" type="text/css" href="css.php?file=holo-base-elements.css" />
+    <link rel="stylesheet" type="text/css" href="css.php?file=holo-kk-light-elements.css" />
+    <link rel="stylesheet" type="text/css" href="css.php?file=holo-base-widgets.css" />
+    <link rel="stylesheet" type="text/css" href="css.php?file=holo-kk-light-widgets.css" />
     
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -58,32 +111,53 @@ function formatFileSize($bytes) {
 <body>
     <!-- Верхняя панель действий -->
     <header class="holo-actionBar">
-        <button class="holo-title">
-            RetroMarket
+      <?php if ($rel_dir !== ''): ?>
+        <button class="holo-title holo-up" onclick="window.open('index.php', '_self');">
+            <img class="logo-img" src="logo.php" alt="RetroMarket">
         </button>
+      <?php else: ?>
+        <button class="holo-title">
+            <img class="logo-img" src="logo.php" alt="RetroMarket">
+        </button>
+      <?php endif; ?>
+      <?php if ($rel_dir !== ''): ?>
         <button onclick="alert('Количество приложений: <?php echo count($apps); ?>')" style="float:right;"><?php echo count($apps); ?></button>
+      <?php endif; ?>
     </header>
 
     <div>
+    <?php if ($rel_dir === ''): ?>
+          <a href="../"><button>mltr</button></a>
+    <?php endif; ?>
           <a href="dmca.html"><button>DMCA</button></a>
     </div>
     <!-- Основной контент -->
-    <?php if (empty($apps)): ?>
+
+    <?php if (empty($apps) && empty($folders)): ?>
         <p>Что-то пусто тут...</p>
     <?php else: ?>
-        <!-- Список приложений в стиле Holo -->
-        <ul class="holo-list">
+        <!-- Список папок и приложений в одном списке -->
+        <ul class="holo-list" id="catalog">
+            <?php foreach ($folders as $folder): ?>
+                <li>
+                    <button onclick="window.location.href='?dir=<?php echo urlencode($folder['rel']); ?>'" style="width: 100%; width: calc(100% + 32px); text-align: left;">
+                        <div style="display: flex; align-items: center; gap: 16px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: bold; margin-bottom: 4px;"><?php echo htmlspecialchars($folder['display']); ?></div>
+                                <div style="font-size: 0.9em; color: #CCCCCC;">Папка</div>
+                            </div>
+                        </div>
+                    </button>
+                </li>
+            <?php endforeach; ?>
             <?php foreach ($apps as $index => $app): ?>
                 <li>
-                    <button onclick="downloadApp('<?php echo htmlspecialchars($app['path']); ?>', '<?php echo htmlspecialchars($app['filename']); ?>')" style="width: 100%; width: calc(100% + 32px); text-align: left;">
+                    <button onclick="downloadApp('<?php echo htmlspecialchars($app['url']); ?>', '<?php echo htmlspecialchars($app['filename']); ?>')" style="width: 100%; width: calc(100% + 32px); text-align: left;">
                         <div style="display: flex; align-items: center; gap: 16px;">
                             <div style="flex: 1;">
                                 <div style="font-weight: bold; margin-bottom: 4px;"><?php echo htmlspecialchars($app['name']); ?></div>
                                 <div style="font-size: 0.9em; color: #CCCCCC;">
-                                    Размер: <?php echo $app['size']; ?> | Дата: <?php echo $app['date']; ?>
-                                </div>
-                                <div style="font-size: 0.8em; color: #999999;">
-                                    <?php echo htmlspecialchars($app['filename']); ?>
+                                    Размер: <?php echo $app['size']; ?>
                                 </div>
                             </div>
                         </div>
@@ -91,7 +165,7 @@ function formatFileSize($bytes) {
                 </li>
             <?php endforeach; ?>
         </ul>
-    <?php endif; ?>  
+    <?php endif; ?>
 
     <!-- Нижняя панель действий -->
     <footer class="holo-actionBar">
