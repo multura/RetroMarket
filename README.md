@@ -1,6 +1,6 @@
 #  Магазин приложений RetroMarket
 
-Веб-приложение для отображения и скачивания APK файлов в стиле Holo UI
+Вебсайт для отображения и скачивания APK файлов в стиле Holo UI
 
 ##  Возможности
 
@@ -73,5 +73,6 @@ php -S localhost:8000
 
 - [ZMYaro](https://github.com/ZMYaro) за создание библиотеки holo-web
 - Google за дизайн-систему Android Holo и шрифт Roboto
+
 
 
