@@ -12,12 +12,17 @@
 ##  Структура проекта
 
 ```
-ANDROID-WEBAPP/
+RetroMarket/
 ├── index.php                      # Основной файл магазина приложений
 ├── holo-base-elements.css         # Базовые стили Holo (размеры)
 ├── holo-kk-light-elements.css     # Тема KitKat Light (цвета)
 ├── holo-base-widgets.css          # Базовые виджеты Holo
 ├── holo-kk-light-widgets.css      # Виджеты KitKat Light
+├── logo.php                       # Кэширование логотипа
+├── logo.svg                       # Логотип
+├── dmca.html                      # DMCA
+├── css.php                        # Кэширование CSS
+├── folder_names.json              # Конфигурация названий папок
 └── README.md                      # Этот файл
 ```
 
@@ -73,6 +78,7 @@ php -S localhost:8000
 
 - [ZMYaro](https://github.com/ZMYaro) за создание библиотеки holo-web
 - Google за дизайн-систему Android Holo и шрифт Roboto
+
 
 
 
