@@ -23,6 +23,7 @@ RetroMarket/
 ├── dmca.html                      # DMCA
 ├── css.php                        # Кэширование CSS
 ├── folder_names.json              # Конфигурация названий папок
+├── LICENSE                        # MIT-лицензия
 └── README.md                      # Этот файл
 ```
 
@@ -78,6 +79,7 @@ php -S localhost:8000
 
 - [ZMYaro](https://github.com/ZMYaro) за создание библиотеки holo-web
 - Google за дизайн-систему Android Holo и шрифт Roboto
+
 
 
 
